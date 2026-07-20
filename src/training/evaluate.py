@@ -143,9 +143,7 @@ def main(argv: list[str] | None = None) -> dict:
     with mlflow.start_run(run_name=f"evaluate-v{version}"):
         mlflow.set_tag("stage", "evaluation")
         mlflow.log_param("evaluated_version", version)
-        mlflow.log_params(
-            {"min_accuracy": args.min_accuracy, "min_f1": args.min_f1}
-        )
+        mlflow.log_params({"min_accuracy": args.min_accuracy, "min_f1": args.min_f1})
         metrics = evaluate_version(version, args)
         mlflow.log_metrics(metrics)
         promoted = gate_and_promote(client, version, metrics, args)

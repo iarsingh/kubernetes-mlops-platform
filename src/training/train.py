@@ -194,7 +194,9 @@ def main(argv: list[str] | None = None) -> dict:
 
         # Artifacts: confusion matrix and metrics snapshot.
         cm = confusion_matrix(y_test, y_pred).tolist()
-        _log_json_artifact({"confusion_matrix": cm, "labels": [0, 1]}, "confusion_matrix.json")
+        _log_json_artifact(
+            {"confusion_matrix": cm, "labels": [0, 1]}, "confusion_matrix.json"
+        )
         _log_json_artifact(metrics, "test_metrics.json")
 
         # Model signature + input example make the served model self-describing.

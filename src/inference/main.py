@@ -228,8 +228,11 @@ def reload_model() -> dict:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     MODEL_LOADED.set(1)
     MODEL_INFO.labels(source=loaded.source, version=str(loaded.version)).set(1)
-    return {"status": "reloaded", "model_source": loaded.source,
-            "model_version": loaded.version}
+    return {
+        "status": "reloaded",
+        "model_source": loaded.source,
+        "model_version": loaded.version,
+    }
 
 
 @app.post("/predict", response_model=PredictResponse)

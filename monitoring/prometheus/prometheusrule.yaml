@@ -1,0 +1,86 @@
+# PrometheusRule (Prometheus Operator CRD) with alerting rules for the ml-api
+# service. Apply into the namespace your Prometheus instance selects rules from.
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: ml-api-alerts
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: kubernetes-mlops-platform
+    # Label your Prometheus's ruleSelector matches (commonly `release: kube-prometheus-stack`).
+    release: kube-prometheus-stack
+spec:
+  groups:
+    - name: ml-api.availability
+      rules:
+        - alert: MLApiHighErrorRate
+          # >5% of prediction requests failing over 5 minutes.
+          expr: |
+            sum(rate(ml_prediction_errors_total[5m]))
+              /
+            clamp_min(sum(rate(ml_predictions_total[5m])) + sum(rate(ml_prediction_errors_total[5m])), 1)
+              > 0.05
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "ml-api error rate above 5%"
+            description: "Prediction error rate is {{ $value | humanizePercentage }} over the last 5m."
+
+        - alert: MLApiNoModelLoaded
+          # A pod is up but serving no model (readiness will be failing too).
+          expr: min(ml_model_loaded) == 0
+          for: 10m
+          labels:
+            severity: critical
+          annotations:
+            summary: "ml-api has no model loaded"
+            description: "At least one ml-api pod reports ml_model_loaded=0 for 10m."
+
+    - name: ml-api.latency
+      rules:
+        - alert: MLApiHighLatencyP95
+          # p95 predict latency above 500ms for 10 minutes.
+          expr: |
+            histogram_quantile(0.95,
+              sum(rate(ml_prediction_latency_seconds_bucket[5m])) by (le)
+            ) > 0.5
+          for: 10m
+          labels:
+            severity: warning
+          annotations:
+            summary: "ml-api p95 latency above 500ms"
+            description: "p95 /predict latency is {{ $value }}s over the last 5m."
+
+    - name: ml-api.workload
+      rules:
+        - alert: MLApiPodRestarts
+          # Any container restarting more than 3 times in 15 minutes.
+          expr: |
+            increase(kube_pod_container_status_restarts_total{namespace="mlops", pod=~"ml-api.*"}[15m]) > 3
+          for: 5m
+          labels:
+            severity: warning
+          annotations:
+            summary: "ml-api pod restarting frequently"
+            description: "Pod {{ $labels.pod }} restarted >3 times in 15m."
+
+        - alert: MLApiInferenceFailuresSpike
+          # A sustained stream of inference-time (500) errors.
+          expr: sum(rate(ml_prediction_errors_total{reason="inference_error"}[5m])) > 0.1
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "ml-api model inference failures"
+            description: "Model is raising inference errors ({{ $value }}/s) — check the loaded model version."
+
+        - alert: MLApiNoTraffic
+          # No predictions at all for 30m during expected serving hours.
+          expr: sum(rate(ml_predictions_total[15m])) == 0
+          for: 30m
+          labels:
+            severity: info
+          annotations:
+            summary: "ml-api receiving no prediction traffic"
+            description: "No predictions served for 30m — verify upstream routing."

@@ -1,0 +1,35 @@
+# Plain Prometheus scrape config (for setups WITHOUT the Prometheus Operator).
+# Drop this job into your prometheus.yml `scrape_configs:` list. It uses
+# Kubernetes pod service discovery + the prometheus.io/* annotations the Helm
+# chart puts on the Service (and that you can mirror onto pods).
+scrape_configs:
+  - job_name: ml-api
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+            - mlops
+    relabel_configs:
+      # Only scrape pods opted-in via annotation.
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: "true"
+      # Use the annotated metrics path (default /metrics).
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_path]
+        action: replace
+        target_label: __metrics_path__
+        regex: (.+)
+      # Use the annotated port.
+      - source_labels:
+          [__address__, __meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+        target_label: __address__
+      # Surface useful pod labels as Prometheus labels.
+      - source_labels: [__meta_kubernetes_namespace]
+        target_label: namespace
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+    scrape_interval: 15s
+    scrape_timeout: 10s

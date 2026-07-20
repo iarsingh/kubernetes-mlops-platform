@@ -1,0 +1,23 @@
+# Standalone ServiceMonitor (alternative to enabling it via the Helm chart with
+# `serviceMonitor.enabled=true`). Tells the Prometheus Operator to scrape the
+# ml-api Service's /metrics endpoint.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: ml-api
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: kubernetes-mlops-platform
+    release: kube-prometheus-stack
+spec:
+  namespaceSelector:
+    matchNames:
+      - mlops
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: ml-api
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+      scrapeTimeout: 10s
