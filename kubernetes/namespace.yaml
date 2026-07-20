@@ -1,0 +1,14 @@
+# Namespace for the ML inference workload. Helm deploys into this namespace
+# (`helm upgrade --install ... -n mlops`). Kept as a plain manifest so the
+# namespace + its baseline policies exist independently of any release.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mlops
+  labels:
+    app.kubernetes.io/part-of: kubernetes-mlops-platform
+    # Enforce the restricted Pod Security Standard on this namespace.
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/audit: restricted

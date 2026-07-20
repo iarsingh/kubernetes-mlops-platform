@@ -1,0 +1,27 @@
+✅ {{ include "ml-api.fullname" . }} deployed (chart {{ .Chart.Name }}-{{ .Chart.Version }}, app {{ .Chart.AppVersion }}).
+
+Release:   {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+Replicas:  {{ if .Values.autoscaling.enabled }}autoscaled {{ .Values.autoscaling.minReplicas }}–{{ .Values.autoscaling.maxReplicas }} (HPA){{ else }}{{ .Values.replicaCount }} (static){{ end }}
+
+1. Watch the rollout:
+   kubectl rollout status deploy/{{ include "ml-api.fullname" . }} -n {{ .Release.Namespace }}
+
+2. Port-forward and hit the API locally:
+   kubectl port-forward svc/{{ include "ml-api.fullname" . }} 8080:{{ .Values.service.port }} -n {{ .Release.Namespace }}
+
+   curl http://localhost:8080/health
+   curl http://localhost:8080/ready
+   curl -s -X POST http://localhost:8080/predict \
+     -H 'Content-Type: application/json' \
+     -d '{"instances":[{"account_age_months":8,"monthly_charges":89.5,"total_charges":716,"num_support_tickets":4,"avg_latency_ms":320,"data_usage_gb":55.2,"num_logins_last_30d":6,"is_premium":0}]}'
+
+3. Prometheus metrics: http://localhost:8080/metrics
+
+{{- if not .Values.existingSecret }}
+
+⚠️  No artifact-store secret configured (existingSecret is empty). The pod will
+    reach the MLflow registry at {{ .Values.config.mlflowTrackingUri }} but will
+    need S3/MinIO credentials to pull model artifacts. Create a Secret and set
+    `existingSecret` for a real deployment. See SECURITY.md.
+{{- end }}

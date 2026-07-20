@@ -1,0 +1,22 @@
+apiVersion: v2
+name: ml-api
+description: >-
+  Helm chart for the churn-classifier inference API — a FastAPI service that
+  serves an MLflow-registered scikit-learn model with Prometheus metrics,
+  health probes, and horizontal autoscaling.
+type: application
+# Chart version is the packaging version; appVersion tracks the app image tag.
+version: 0.1.0
+appVersion: "1.0.0"
+keywords:
+  - mlops
+  - machine-learning
+  - inference
+  - fastapi
+  - mlflow
+home: https://github.com/iarsingh/kubernetes-mlops-platform
+sources:
+  - https://github.com/iarsingh/kubernetes-mlops-platform
+maintainers:
+  - name: iarsingh
+    url: https://github.com/iarsingh

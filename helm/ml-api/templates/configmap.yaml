@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "ml-api.fullname" . }}-config
+  labels:
+    {{- include "ml-api.labels" . | nindent 4 }}
+data:
+  MLFLOW_TRACKING_URI: {{ .Values.config.mlflowTrackingUri | quote }}
+  REGISTERED_MODEL_NAME: {{ .Values.config.registeredModelName | quote }}
+  PRODUCTION_ALIAS: {{ .Values.config.productionAlias | quote }}
+  ALLOW_LOCAL_FALLBACK: {{ .Values.config.allowLocalFallback | quote }}
+  LOG_LEVEL: {{ .Values.config.logLevel | quote }}

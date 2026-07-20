@@ -1,0 +1,50 @@
+# syntax=docker/dockerfile:1.7
+# ---------------------------------------------------------------------------
+# Training image — run as a Kubernetes Job / CI step. Multi-stage, non-root.
+# ---------------------------------------------------------------------------
+
+# ---- Builder stage --------------------------------------------------------
+FROM python:3.12-slim-bookworm AS builder
+
+ENV PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+WORKDIR /build
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+COPY requirements.txt .
+RUN pip install --upgrade pip \
+    && pip install -r requirements.txt
+
+# ---- Runtime stage --------------------------------------------------------
+FROM python:3.12-slim-bookworm AS runtime
+
+LABEL org.opencontainers.image.title="churn-training" \
+      org.opencontainers.image.source="https://github.com/iarsingh/kubernetes-mlops-platform" \
+      org.opencontainers.image.description="Training + evaluation job for the churn model"
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/opt/venv/bin:$PATH"
+
+RUN groupadd --gid 10001 app \
+    && useradd --uid 10001 --gid app --no-create-home --shell /usr/sbin/nologin app
+
+WORKDIR /app
+
+COPY --from=builder /opt/venv /opt/venv
+COPY src ./src
+
+USER 10001:10001
+
+# Default entrypoint trains then evaluates+gates. Override args per-Job as needed
+# (e.g. `--n-estimators 400`). MLFLOW_TRACKING_URI is injected via env/secret.
+ENTRYPOINT ["python", "-m"]
+CMD ["src.training.train"]

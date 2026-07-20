@@ -1,0 +1,91 @@
+# Default-deny + explicit-allow NetworkPolicies for the mlops namespace.
+# Requires a CNI that enforces NetworkPolicy (Calico, Cilium, GKE Dataplane V2).
+---
+# 1. Default-deny all ingress and egress in the namespace.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: mlops
+  labels:
+    app.kubernetes.io/part-of: kubernetes-mlops-platform
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+---
+# 2. Allow ingress to the ml-api pods on the container port from the ingress
+#    controller / same-namespace clients, plus Prometheus scraping.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ml-api-ingress
+  namespace: mlops
+  labels:
+    app.kubernetes.io/part-of: kubernetes-mlops-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: ml-api
+  policyTypes:
+    - Ingress
+  ingress:
+    # Application traffic from ingress-nginx / gateway namespace.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8000
+    # Prometheus scraping the /metrics endpoint.
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: monitoring
+      ports:
+        - protocol: TCP
+          port: 8000
+---
+# 3. Allow ml-api egress to DNS and to the MLflow tracking server.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-ml-api-egress
+  namespace: mlops
+  labels:
+    app.kubernetes.io/part-of: kubernetes-mlops-platform
+spec:
+  podSelector:
+    matchLabels:
+      app.kubernetes.io/name: ml-api
+  policyTypes:
+    - Egress
+  egress:
+    # Cluster DNS.
+    - to:
+        - namespaceSelector: {}
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+    # MLflow tracking server (adjust namespace/port to your deployment).
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: mlflow
+      ports:
+        - protocol: TCP
+          port: 5000
+    # Egress to Google APIs / GCS (artifact store) over HTTPS. Tighten with
+    # an egress FQDN policy (Cilium) or a proxy in production.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 169.254.169.254/32  # block link-local / metadata server
+      ports:
+        - protocol: TCP
+          port: 443

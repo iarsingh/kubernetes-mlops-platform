@@ -1,0 +1,65 @@
+# syntax=docker/dockerfile:1.7
+# ---------------------------------------------------------------------------
+# Inference service image — multi-stage, non-root, slim final layer.
+# ---------------------------------------------------------------------------
+
+# ---- Builder stage: install deps into an isolated virtualenv --------------
+FROM python:3.12-slim-bookworm AS builder
+
+ENV PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PYTHONDONTWRITEBYTECODE=1
+
+WORKDIR /build
+
+# Build deps needed only to compile wheels (psycopg2 etc.). Kept out of final.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential gcc \
+    && rm -rf /var/lib/apt/lists/*
+
+# Create a self-contained venv we can copy wholesale into the runtime image.
+RUN python -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+COPY requirements.txt .
+# Inference doesn't need the full training toolchain, but we install the pinned
+# set for parity with training. Split into its own layer for cache efficiency.
+RUN pip install --upgrade pip \
+    && pip install -r requirements.txt
+
+# ---- Runtime stage: minimal, non-root ------------------------------------
+FROM python:3.12-slim-bookworm AS runtime
+
+# Pinned OCI labels for provenance.
+LABEL org.opencontainers.image.title="churn-inference" \
+      org.opencontainers.image.source="https://github.com/iarsingh/kubernetes-mlops-platform" \
+      org.opencontainers.image.description="FastAPI churn model inference service"
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PATH="/opt/venv/bin:$PATH" \
+    PORT=8000
+
+# Create an unprivileged user to run the service.
+RUN groupadd --gid 10001 app \
+    && useradd --uid 10001 --gid app --no-create-home --shell /usr/sbin/nologin app
+
+WORKDIR /app
+
+# Copy the virtualenv from the builder (no build toolchain in final image).
+COPY --from=builder /opt/venv /opt/venv
+
+# Copy only the source needed to serve.
+COPY src ./src
+
+USER 10001:10001
+
+EXPOSE 8000
+
+# Container-level healthcheck hitting the liveness endpoint.
+HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
+    CMD python -c "import urllib.request,sys; \
+    sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/health').status==200 else 1)" \
+    || exit 1
+
+CMD ["uvicorn", "src.inference.main:app", "--host", "0.0.0.0", "--port", "8000"]
