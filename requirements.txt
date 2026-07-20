@@ -1,0 +1,31 @@
+# ---------------------------------------------------------------------------
+# Runtime + dev dependencies for the Kubernetes MLOps Platform.
+# Versions use compatible-release pins (~=) so patch updates flow in but
+# minor/major bumps stay deliberate. Pins reflect versions this repo was
+# validated against. For fully reproducible builds, generate a lockfile
+# (`pip-compile` / `uv pip compile`) from this file.
+# ---------------------------------------------------------------------------
+
+# --- Inference API ---------------------------------------------------------
+fastapi~=0.139
+uvicorn[standard]~=0.51
+pydantic~=2.13
+prometheus-client~=0.21
+
+# --- ML / training ---------------------------------------------------------
+scikit-learn~=1.9
+pandas~=2.3
+numpy~=2.5
+# MLflow 3.x requires a database tracking backend (sqlite/postgres); the
+# filesystem store is deprecated. docker-compose uses a Postgres backend.
+mlflow~=3.14
+
+# --- Artifact store / DB backends (MinIO/S3, PostgreSQL) -------------------
+boto3~=1.35
+psycopg2-binary~=2.9
+
+# --- Testing / quality -----------------------------------------------------
+pytest~=9.1
+pytest-cov~=7.1
+httpx~=0.28
+ruff~=0.15
