@@ -1,5 +1,9 @@
 # Production MLOps Platform on Kubernetes
 
+<!-- repository-summary -->
+An end-to-end MLOps reference with MLflow, FastAPI, Docker, Kubernetes, Helm, Prometheus, Grafana, and GitHub Actions.
+<!-- /repository-summary -->
+
 An end-to-end, production-shaped MLOps platform: train a classifier, govern it
 through the MLflow Model Registry, serve it behind a FastAPI inference API,
 containerize it, deploy it to Kubernetes with Helm (probes + autoscaling),
