@@ -1,5 +1,59 @@
 # Production MLOps Platform on Kubernetes
 
+<!-- project-guide:start -->
+## Project guide
+
+[Project architecture](PROJECT_ARCHITECTURE.md) · [Interview questions and answers](INTERVIEW_QA.md)
+
+Use the architecture document for the component diagram, implementation boundaries, and verification entry points. The interview guide includes source-backed answers and project walkthroughs.
+
+### Implementation map
+
+| Component | Responsibility |
+| --- | --- |
+| [`src/inference/main.py`](src/inference/main.py) | HTTP handlers: `GET /`, `GET /health`, `GET /ready`, `GET /metrics`, `POST /reload` |
+| [`src/common/dataset.py`](src/common/dataset.py) | Functions: `generate_dataset`, `_z` |
+| [`src/training/evaluate.py`](src/training/evaluate.py) | Functions: `parse_args`, `resolve_version`, `evaluate_version`, `gate_and_promote`, `main` |
+| [`src/inference/model_loader.py`](src/inference/model_loader.py) | Functions: `_load_from_registry`, `_load_from_local`, `load_model`, `get_cached_model`, `reset_cache` |
+| [`src/training/train.py`](src/training/train.py) | Functions: `parse_args`, `build_model`, `compute_metrics`, `_log_json_artifact`, `register_model_version`, `main` |
+| [`requirements.txt`](requirements.txt) | Implementation or supporting configuration |
+| [`terraform/main.tf`](terraform/main.tf) | Terraform resource/module declarations |
+| [`terraform/modules/artifact-registry/main.tf`](terraform/modules/artifact-registry/main.tf) | Terraform resource/module declarations |
+| [`terraform/modules/artifact-registry/outputs.tf`](terraform/modules/artifact-registry/outputs.tf) | Terraform resource/module declarations |
+| [`terraform/modules/artifact-registry/variables.tf`](terraform/modules/artifact-registry/variables.tf) | Terraform resource/module declarations |
+| [`terraform/modules/gcs-bucket/main.tf`](terraform/modules/gcs-bucket/main.tf) | Terraform resource/module declarations |
+| [`src/__init__.py`](src/__init__.py) | Implementation or supporting configuration |
+| [`terraform/outputs.tf`](terraform/outputs.tf) | Terraform resource/module declarations |
+| [`terraform/variables.tf`](terraform/variables.tf) | Terraform resource/module declarations |
+| [`terraform/versions.tf`](terraform/versions.tf) | Terraform resource/module declarations |
+| [`src/common/__init__.py`](src/common/__init__.py) | Implementation or supporting configuration |
+| [`src/common/schema.py`](src/common/schema.py) | Implementation or supporting configuration |
+| [`Makefile`](Makefile) | Implementation or supporting configuration |
+| [`docker-compose.yml`](docker-compose.yml) | Container build/service configuration |
+| [`docker/Dockerfile.inference`](docker/Dockerfile.inference) | Implementation or supporting configuration |
+| [`docker/Dockerfile.training`](docker/Dockerfile.training) | Implementation or supporting configuration |
+| [`tests/__init__.py`](tests/__init__.py) | Executable checks and regression examples |
+
+### Local setup and verification
+
+From the repository root (the commands follow the checked-in manifests):
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install -r requirements.txt
+python -m pytest -q
+```
+
+To serve the FastAPI application locally, install the server separately if it is not already available:
+
+```bash
+python -m pip install uvicorn
+PYTHONPATH=src python -m uvicorn inference.main:app --reload
+```
+
+<!-- project-guide:end -->
+
 <!-- repository-summary -->
 An end-to-end MLOps reference with MLflow, FastAPI, Docker, Kubernetes, Helm, Prometheus, Grafana, and GitHub Actions.
 <!-- /repository-summary -->
