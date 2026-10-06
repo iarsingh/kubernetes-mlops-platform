@@ -15,7 +15,7 @@ from src.training.train import build_model, compute_metrics
 
 
 def _args(**overrides) -> argparse.Namespace:
-    base = dict(n_estimators=50, learning_rate=0.1, max_depth=3, seed=42)
+    base = {"n_estimators": 50, "learning_rate": 0.1, "max_depth": 3, "seed": 42}
     base.update(overrides)
     return argparse.Namespace(**base)
 

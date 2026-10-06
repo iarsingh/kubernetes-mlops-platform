@@ -121,7 +121,7 @@ def load_model(force_reload: bool = False) -> LoadedModel:
             try:
                 _CACHE = _load_from_local()
                 return _CACHE
-            except Exception as exc:  # noqa: BLE001
+            except Exception as exc:
                 raise ModelLoadError(
                     f"Registry load failed ({registry_error}); "
                     f"local fallback also failed ({exc})."

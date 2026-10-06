@@ -38,7 +38,7 @@ def loaded_api(trained_pipeline):
     """A FastAPI TestClient with the trained model injected into the cache."""
     from fastapi.testclient import TestClient
 
-    import src.inference.model_loader as model_loader
+    from src.inference import model_loader
     from src.inference.main import app
 
     model_loader.reset_cache()

@@ -259,7 +259,7 @@ def predict(request: PredictRequest) -> PredictResponse:
         probs = loaded.model.predict_proba(frame)[:, 1]
     except HTTPException:
         raise
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         PREDICTION_ERRORS_TOTAL.labels(reason="inference_error").inc()
         logger.exception("Inference failed")
         raise HTTPException(status_code=500, detail=f"inference error: {exc}")
