@@ -21,14 +21,17 @@ RUN apt-get update \
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-COPY requirements.txt .
+COPY requirements.txt security-constraints.txt .
 # Inference doesn't need the full training toolchain, but we install the pinned
 # set for parity with training. Split into its own layer for cache efficiency.
-RUN pip install --upgrade pip \
-    && pip install -r requirements.txt
+RUN pip install --upgrade "pip>=26.1.2,<27" \
+    && pip install -r requirements.txt -c security-constraints.txt
 
 # ---- Runtime stage: minimal, non-root ------------------------------------
 FROM python:3.12-slim-bookworm AS runtime
+
+# Patch packaging tools inherited from the base Python image as well as the venv.
+RUN python -m pip install --no-cache-dir --upgrade "pip>=26.1.2,<27" "setuptools>=78.1.1,<81"
 
 # Pinned OCI labels for provenance.
 LABEL org.opencontainers.image.title="churn-inference" \

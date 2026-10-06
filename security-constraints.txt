@@ -1,0 +1,5 @@
+# Minimum fixed versions identified by the image scanner.
+pip>=26.1.2,<27
+setuptools>=78.1.1,<81
+msgpack>=1.2.1,<2
+urllib3>=2.8.0,<3
