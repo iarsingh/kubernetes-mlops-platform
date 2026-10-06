@@ -18,6 +18,7 @@ env:
 permissions:
   contents: read
   packages: write
+  security-events: write
 
 jobs:
   build-scan-push:
@@ -70,6 +71,14 @@ jobs:
           ignore-unfixed: true
           # Fail the build on fixable CRITICAL/HIGH findings.
           exit-code: "1"
+
+      - name: Preserve Trivy report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: trivy-${{ matrix.component }}
+          path: trivy-${{ matrix.component }}.sarif
+          if-no-files-found: warn
 
       - name: Upload Trivy SARIF
         if: always()
