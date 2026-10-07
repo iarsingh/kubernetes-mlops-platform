@@ -31,7 +31,9 @@ RUN pip install --upgrade "pip>=26.1.2,<27" \
 FROM python:3.12-slim-bookworm AS runtime
 
 # Patch packaging tools inherited from the base Python image as well as the venv.
-RUN python -m pip install --no-cache-dir --upgrade "pip>=26.1.2,<27" "setuptools>=78.1.1,<81"
+# Runtime images are immutable: packaging/bootstrap tooling remains in the builder.
+RUN python -m pip uninstall -y pip setuptools wheel \
+    && rm -rf /usr/local/lib/python3.12/ensurepip
 
 # Pinned OCI labels for provenance.
 LABEL org.opencontainers.image.title="churn-inference" \
@@ -51,6 +53,7 @@ WORKDIR /app
 
 # Copy the virtualenv from the builder (no build toolchain in final image).
 COPY --from=builder /opt/venv /opt/venv
+RUN /opt/venv/bin/python -m pip uninstall -y pip setuptools wheel
 
 # Copy only the source needed to serve.
 COPY src ./src
